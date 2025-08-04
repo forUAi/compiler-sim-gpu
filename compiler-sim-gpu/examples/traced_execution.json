@@ -1,0 +1,134 @@
+{
+  "trace": {
+    "compilation_info": {
+      "input_file": "matmul.dsl",
+      "timestamp": "2024-01-15T10:23:45Z",
+      "compiler_version": "1.0.0"
+    },
+    "symbols": {
+      "A": {
+        "type": "tensor",
+        "memory_offset": 0,
+        "shape": [1024, 512],
+        "dtype": "f32",
+        "size_bytes": 2097152,
+        "location": {
+          "line": 4,
+          "column": 1,
+          "file": "matmul.dsl"
+        }
+      },
+      "B": {
+        "type": "tensor",
+        "memory_offset": 2097152,
+        "shape": [512, 256],
+        "dtype": "f32",
+        "size_bytes": 524288,
+        "location": {
+          "line": 5,
+          "column": 1,
+          "file": "matmul.dsl"
+        }
+      },
+      "C": {
+        "type": "tensor",
+        "memory_offset": 2621440,
+        "shape": [1024, 256],
+        "dtype": "f32",
+        "size_bytes": 1048576,
+        "location": {
+          "line": 6,
+          "column": 1,
+          "file": "matmul.dsl"
+        }
+      },
+      "bias": {
+        "type": "tensor",
+        "memory_offset": 3670016,
+        "shape": [256],
+        "dtype": "f32",
+        "size_bytes": 1024,
+        "location": {
+          "line": 11,
+          "column": 1,
+          "file": "matmul.dsl"
+        }
+      }
+    },
+    "passes": [
+      {
+        "name": "LoopUnrollingPass",
+        "execution_time_ms": 2.341,
+        "transformations": [
+          "No loops found in current IR"
+        ],
+        "ir_snapshot": {
+          "before": [
+            "%A = alloc {shape = [1024, 512], dtype = \"f32\", size = 524288}",
+            "%B = alloc {shape = [512, 256], dtype = \"f32\", size = 131072}",
+            "%C = alloc {shape = [1024, 256], dtype = \"f32\", size = 262144}",
+            "%matmul_op = matmul(%A, %B)",
+            "%bias = alloc {shape = [256], dtype = \"f32\", size = 256}",
+            "%add_op = add(%C, %bias)"
+          ],
+          "after": [
+            "%A = alloc {shape = [1024, 512], dtype = \"f32\", size = 524288}",
+            "%B = alloc {shape = [512, 256], dtype = \"f32\", size = 131072}",
+            "%C = alloc {shape = [1024, 256], dtype = \"f32\", size = 262144}",
+            "%matmul_op = matmul(%A, %B)",
+            "%bias = alloc {shape = [256], dtype = \"f32\", size = 256}",
+            "%add_op = add(%C, %bias)"
+          ]
+        }
+      },
+      {
+        "name": "TensorFusionPass",
+        "execution_time_ms": 3.782,
+        "transformations": [
+          "Fused matmul_op and add_op into matmul_op_fused_add"
+        ],
+        "ir_snapshot": {
+          "after": [
+            "%A = alloc {shape = [1024, 512], dtype = \"f32\", size = 524288}",
+            "%B = alloc {shape = [512, 256], dtype = \"f32\", size = 131072}",
+            "%C = alloc {shape = [1024, 256], dtype = \"f32\", size = 262144}",
+            "%bias = alloc {shape = [256], dtype = \"f32\", size = 256}",
+            "%matmul_op_fused_add = matmul_bias(%A, %B, %bias) {fused_ops = \"matmul_add\"}"
+          ]
+        }
+      },
+      {
+        "name": "MemoryMapPass",
+        "execution_time_ms": 1.234,
+        "transformations": [
+          "Mapped tensor A to offset 0 (size: 2097152 bytes)",
+          "Mapped tensor B to offset 2097152 (size: 524288 bytes)",
+          "Mapped tensor C to offset 2621440 (size: 1048576 bytes)",
+          "Mapped tensor bias to offset 3670016 (size: 1024 bytes)",
+          "Total memory allocated: 3671040 bytes"
+        ]
+      }
+    ],
+    "memory_map": {
+      "A": {"offset": 0, "size": 2097152},
+      "B": {"offset": 2097152, "size": 524288},
+      "C": {"offset": 2621440, "size": 1048576},
+      "bias": {"offset": 3670016, "size": 1024}
+    },
+    "gpu_simulation": {
+      "kernel_launches": [
+        {
+          "name": "matmul_bias_kernel",
+          "grid_dim": [32, 32, 1],
+          "block_dim": [32, 32, 1],
+          "shared_memory_bytes": 8192,
+          "execution_time_ms": 2.3,
+          "performance_tflops": 7.2,
+          "memory_bandwidth_gbps": 342.5
+        }
+      ],
+      "total_memory_allocated_mb": 3.5,
+      "peak_memory_usage_mb": 3.5
+    }
+  }
+}

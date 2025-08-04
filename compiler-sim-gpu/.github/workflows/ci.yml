@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ libjsoncpp-dev
+    
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+    
+    - name: Build
+      run: cmake --build build -j$(nproc)
+    
+    - name: Run tests
+      run: |
+        cd build
+        ctest --verbose --output-on-failure
+    
+    - name: Test CLI
+      run: |
+        ./build/compiler-sim examples/matmul.dsl --debug --emit-ir
+        test -f trace.json
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: trace-output
+        path: trace.json
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run clang-format
+      run: |
+        find . -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
+
+  documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check documentation
+      run: |
+        test -f README.md
+        test -f docs/architecture.md
+        test -f docs/ir_examples.md
+        test -f docs/debugging.md
